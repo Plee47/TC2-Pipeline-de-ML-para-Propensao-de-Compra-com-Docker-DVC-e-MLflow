@@ -24,7 +24,6 @@ share/python-wheels/
 MANIFEST
 
 # Poetry
-poetry.lock
 .venv/
 venv/
 ENV/
