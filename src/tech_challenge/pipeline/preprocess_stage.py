@@ -1,4 +1,3 @@
-import sys
 from pathlib import Path
 import pickle
 from tech_challenge.config import settings

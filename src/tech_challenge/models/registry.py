@@ -1,5 +1,4 @@
 import mlflow
-from mlflow.entities import ViewType
 
 
 def promote_best_model_to_registry(

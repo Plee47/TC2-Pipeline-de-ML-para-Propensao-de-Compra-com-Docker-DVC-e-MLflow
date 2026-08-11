@@ -7,7 +7,7 @@ from sklearn.metrics import (
     f1_score,
     roc_auc_score,
 )
-from typing import Dict, Any
+from typing import Dict
 
 
 def evaluate_model(

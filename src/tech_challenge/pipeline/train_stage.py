@@ -1,6 +1,4 @@
-import sys
 from pathlib import Path
-import pickle
 import mlflow
 import pandas as pd
 from tech_challenge.config import settings

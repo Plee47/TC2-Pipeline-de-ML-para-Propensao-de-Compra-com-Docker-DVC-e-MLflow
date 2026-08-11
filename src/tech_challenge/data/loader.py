@@ -1,6 +1,5 @@
 import pandas as pd
 from pathlib import Path
-from typing import Tuple
 
 
 def load_raw_data(filepath: str | Path) -> pd.DataFrame:

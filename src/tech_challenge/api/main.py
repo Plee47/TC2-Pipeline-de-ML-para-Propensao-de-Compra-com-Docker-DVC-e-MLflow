@@ -16,7 +16,7 @@ async def lifespan(app: FastAPI):
     mlflow.set_tracking_uri(settings.mlflow_tracking_uri)
     try:
         model = mlflow.pyfunc.load_model(
-            f"models:/online_shoppers_intention/Production"
+            "models:/online_shoppers_intention/Production"
         )
     except Exception:
         print("Warning: Could not load model from registry, using None")
