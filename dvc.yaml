@@ -16,14 +16,14 @@ stages:
       - src/tech_challenge/models/train.py
       - src/tech_challenge/models/evaluate.py
       - params.yaml
-    metrics:
-      - metrics.json:
-          cache: false
+    outs:
+      - models/model.pkl
 
   evaluate:
     cmd: python -m tech_challenge.pipeline.evaluate_stage
     deps:
       - src/tech_challenge/models/registry.py
-    plots:
+      - models/model.pkl
+    metrics:
       - metrics.json:
           cache: false
