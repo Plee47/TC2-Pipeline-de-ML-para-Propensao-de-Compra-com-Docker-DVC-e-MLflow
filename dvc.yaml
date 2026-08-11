@@ -1,0 +1,29 @@
+stages:
+  preprocess:
+    cmd: python -m tech_challenge.pipeline.preprocess_stage
+    deps:
+      - data/raw/online_shoppers_intention.csv
+      - src/tech_challenge/data/loader.py
+      - src/tech_challenge/data/preprocess.py
+    outs:
+      - data/processed:
+          cache: true
+
+  train:
+    cmd: python -m tech_challenge.pipeline.train_stage
+    deps:
+      - data/processed
+      - src/tech_challenge/models/train.py
+      - src/tech_challenge/models/evaluate.py
+      - params.yaml
+    metrics:
+      - metrics.json:
+          cache: false
+
+  evaluate:
+    cmd: python -m tech_challenge.pipeline.evaluate_stage
+    deps:
+      - src/tech_challenge/models/registry.py
+    plots:
+      - metrics.json:
+          cache: false
