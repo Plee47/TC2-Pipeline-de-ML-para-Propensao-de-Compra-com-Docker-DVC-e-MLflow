@@ -21,10 +21,10 @@ def preprocess_stage() -> None:
 
     X_train, X_test, y_train, y_test = preprocessor.fit_transform(df)
 
-    X_train.to_parquet(processed_dir / "X_train.parquet", index=False)
-    X_test.to_parquet(processed_dir / "X_test.parquet", index=False)
-    y_train.to_parquet(processed_dir / "y_train.parquet", index=False)
-    y_test.to_parquet(processed_dir / "y_test.parquet", index=False)
+    X_train.to_csv(processed_dir / "X_train.csv", index=False)
+    X_test.to_csv(processed_dir / "X_test.csv", index=False)
+    y_train.to_csv(processed_dir / "y_train.csv", index=False)
+    y_test.to_csv(processed_dir / "y_test.csv", index=False)
 
     with open(processed_dir / "preprocessor.pkl", "wb") as f:
         pickle.dump(preprocessor, f)

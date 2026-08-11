@@ -18,10 +18,10 @@ def train_stage() -> None:
 
     models_dir.mkdir(parents=True, exist_ok=True)
 
-    X_train = pd.read_parquet(processed_dir / "X_train.parquet")
-    X_test = pd.read_parquet(processed_dir / "X_test.parquet")
-    y_train = pd.read_parquet(processed_dir / "y_train.parquet")
-    y_test = pd.read_parquet(processed_dir / "y_test.parquet")
+    X_train = pd.read_csv(processed_dir / "X_train.csv")
+    X_test = pd.read_csv(processed_dir / "X_test.csv")
+    y_train = pd.read_csv(processed_dir / "y_train.csv").iloc[:, 0]
+    y_test = pd.read_csv(processed_dir / "y_test.csv").iloc[:, 0]
 
     mlflow.set_tracking_uri(settings.mlflow_tracking_uri)
     mlflow.set_experiment("online_shoppers_intention")
@@ -55,6 +55,9 @@ def train_stage() -> None:
             print(f"{model_name} trained. Metrics: {metrics}")
 
     print("Training complete.")
+
+    models_dir.mkdir(parents=True, exist_ok=True)
+    trainer.save_model(models_dir / "model.pkl")
 
 
 if __name__ == "__main__":

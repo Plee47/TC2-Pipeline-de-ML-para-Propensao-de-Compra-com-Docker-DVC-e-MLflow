@@ -1,29 +1,32 @@
 stages:
   preprocess:
-    cmd: python -m tech_challenge.pipeline.preprocess_stage
+    cmd: poetry run python run_preprocess.py
     deps:
       - data/raw/online_shoppers_intention.csv
       - src/tech_challenge/data/loader.py
       - src/tech_challenge/data/preprocess.py
+      - run_preprocess.py
     outs:
       - data/processed:
           cache: true
 
   train:
-    cmd: python -m tech_challenge.pipeline.train_stage
+    cmd: poetry run python run_train.py
     deps:
       - data/processed
       - src/tech_challenge/models/train.py
       - src/tech_challenge/models/evaluate.py
       - params.yaml
+      - run_train.py
     outs:
       - models/model.pkl
 
   evaluate:
-    cmd: python -m tech_challenge.pipeline.evaluate_stage
+    cmd: poetry run python run_evaluate.py
     deps:
       - src/tech_challenge/models/registry.py
       - models/model.pkl
+      - run_evaluate.py
     metrics:
       - metrics.json:
           cache: false
