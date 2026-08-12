@@ -30,8 +30,8 @@ dvc version               # DVC 3.67.1+
 
 ```bash
 cd ~/Desktop/MBA
-git clone <repo-url> tech-challenge-fase2  # ou git init se local
-cd tech-challenge-fase2
+git clone <repo-url> mba.fiap.ecommerce.buy.predictor  # ou git init se local
+cd mba.fiap.ecommerce.buy.predictor
 ```
 
 **Verificação**:
@@ -48,15 +48,15 @@ poetry install
 
 **Saída esperada**:
 ```
-Creating virtualenv tech-challenge-fase2-jKjqlADD-py3.14 in ~/.cache/pypoetry/virtualenvs
+Creating virtualenv mba.fiap.ecommerce.buy.predictor-jKjqlADD-py3.14 in ~/.cache/pypoetry/virtualenvs
 Installing dependencies from lock file
 ...
-Installing the current project: tech-challenge-fase2 (0.1.0)
+Installing the current project: mba.fiap.ecommerce.buy.predictor (0.1.0)
 ```
 
 **Verificação**:
 ```bash
-poetry run python -c "import tech_challenge; print('✅ Package installed')"
+poetry run python -c "import ecommerce_buy_predictor; print('✅ Package installed')"
 ```
 
 ### 3. Verificar DVC e Dataset
@@ -148,7 +148,7 @@ Acessa: **http://localhost:5000**
 ### 8. Testar API (Opcional)
 
 ```bash
-poetry run python -m uvicorn tech_challenge.api.main:app --reload
+poetry run python -m uvicorn ecommerce_buy_predictor.api.main:app --reload
 ```
 
 Em outro terminal:
@@ -232,7 +232,7 @@ Os **mesmos outputs** sempre aparecem porque:
 poetry install --no-build-isolation
 ```
 
-### `dvc repro` falha em "ModuleNotFoundError: tech_challenge"
+### `dvc repro` falha em "ModuleNotFoundError: ecommerce_buy_predictor"
 
 **Problema**: PYTHONPATH não inclui `src/`
 

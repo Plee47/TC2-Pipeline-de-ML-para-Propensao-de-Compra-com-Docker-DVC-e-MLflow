@@ -27,7 +27,7 @@ e containerização (Docker).
 
 ```bash
 # Clonar repositório
-cd tech-challenge-fase2
+cd mba.fiap.ecommerce.buy.predictor
 
 # Instalar dependências
 poetry install
@@ -86,11 +86,11 @@ mlflow ui --backend-store-uri sqlite:///mlflow.db
 
 ```bash
 # Via Poetry
-poetry run python -m uvicorn tech_challenge.api.main:app --reload --host 0.0.0.0 --port 8000
+poetry run python -m uvicorn ecommerce_buy_predictor.api.main:app --reload --host 0.0.0.0 --port 8000
 
 # Ou via Docker
-docker build -t tech-challenge .
-docker run -p 8000:8000 tech-challenge
+docker build -t ecommerce-predictor .
+docker run -p 8000:8000 ecommerce-predictor
 ```
 
 Testar endpoints:
@@ -108,8 +108,8 @@ curl -X POST http://localhost:8000/predict \
 ## 📁 Estrutura do Projeto
 
 ```
-tech-challenge-fase2/
-├── src/tech_challenge/
+mba.fiap.ecommerce.buy.predictor/
+├── src/ecommerce_buy_predictor/
 │   ├── config.py                 # Configurações via .env
 │   ├── data/
 │   │   ├── loader.py             # Carregar CSV
@@ -227,7 +227,7 @@ Melhor modelo é promovido para `Production` no Model Registry.
 
 ```bash
 # Criar Render service com imagem Docker
-# - URL: https://github.com/<seu-repo>/tech-challenge-fase2
+# - URL: https://github.com/<seu-repo>/mba.fiap.ecommerce.buy.predictor
 # - Dockerfile presente
 # - Portar 8000
 

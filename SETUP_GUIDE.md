@@ -12,14 +12,14 @@
 - [x] `pyproject.toml` configurado com Poetry
 - [x] Dependências separadas (prod/dev)
 - [x] Módulos Python com type hints:
-  - `tech_challenge/config.py` — leitura de `.env`
-  - `tech_challenge/data/loader.py` — carregar CSV
-  - `tech_challenge/data/preprocess.py` — `Preprocessor` class
-  - `tech_challenge/models/train.py` — `ModelTrainer` class (LogReg + RF)
-  - `tech_challenge/models/evaluate.py` — métricas e logging MLflow
-  - `tech_challenge/models/registry.py` — promoção ao Model Registry
-  - `tech_challenge/pipeline/*.py` — 3 estágios DVC
-  - `tech_challenge/api/main.py` — FastAPI app com `/health` e `/predict`
+  - `ecommerce_buy_predictor/config.py` — leitura de `.env`
+  - `ecommerce_buy_predictor/data/loader.py` — carregar CSV
+  - `ecommerce_buy_predictor/data/preprocess.py` — `Preprocessor` class
+  - `ecommerce_buy_predictor/models/train.py` — `ModelTrainer` class (LogReg + RF)
+  - `ecommerce_buy_predictor/models/evaluate.py` — métricas e logging MLflow
+  - `ecommerce_buy_predictor/models/registry.py` — promoção ao Model Registry
+  - `ecommerce_buy_predictor/pipeline/*.py` — 3 estágios DVC
+  - `ecommerce_buy_predictor/api/main.py` — FastAPI app com `/health` e `/predict`
 - [x] `.env.example` com placeholders
 - [x] `.env` criado localmente
 - [x] Testes unitários (`tests/`)
@@ -36,7 +36,7 @@
 Aguardando instalação de Poetry e DVC em background. Assim que completarem:
 
 ```bash
-cd "C:\Users\Aline\OneDrive\Desktop\MBA\tech-challenge-fase2"
+cd "C:\Users\Aline\OneDrive\Desktop\MBA\mba.fiap.ecommerce.buy.predictor"
 
 # 1. Instalar dependências do projeto
 poetry install
@@ -95,7 +95,7 @@ Após `dvc repro` completar com sucesso:
 
 3. Testar API:
    ```bash
-   poetry run python -m uvicorn tech_challenge.api.main:app --reload
+   poetry run python -m uvicorn ecommerce_buy_predictor.api.main:app --reload
    curl http://localhost:8000/health
    ```
 
@@ -139,8 +139,8 @@ Senão, o script `scripts/generate_sample_data.py` já gerou um dataset de exemp
 ## 📁 Estrutura final esperada
 
 ```
-tech-challenge-fase2/
-├── src/tech_challenge/
+mba.fiap.ecommerce.buy.predictor/
+├── src/ecommerce_buy_predictor/
 │   ├── __init__.py
 │   ├── config.py
 │   ├── data/ (loader.py, preprocess.py)
