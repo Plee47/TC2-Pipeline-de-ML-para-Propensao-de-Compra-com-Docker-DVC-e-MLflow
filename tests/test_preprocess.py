@@ -1,6 +1,6 @@
 import pandas as pd
 import pytest
-from tech_challenge.data.preprocess import Preprocessor
+from ecommerce_buy_predictor.data.preprocess import Preprocessor
 
 
 @pytest.fixture

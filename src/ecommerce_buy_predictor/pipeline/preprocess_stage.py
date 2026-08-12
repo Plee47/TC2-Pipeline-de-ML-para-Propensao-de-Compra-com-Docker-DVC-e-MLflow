@@ -1,8 +1,8 @@
 from pathlib import Path
 import pickle
-from tech_challenge.config import settings
-from tech_challenge.data.loader import load_raw_data
-from tech_challenge.data.preprocess import Preprocessor
+from ecommerce_buy_predictor.config import settings
+from ecommerce_buy_predictor.data.loader import load_raw_data
+from ecommerce_buy_predictor.data.preprocess import Preprocessor
 
 
 def preprocess_stage() -> None:

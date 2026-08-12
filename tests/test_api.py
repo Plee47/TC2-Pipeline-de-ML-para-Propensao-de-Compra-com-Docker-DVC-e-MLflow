@@ -1,5 +1,5 @@
 from fastapi.testclient import TestClient
-from tech_challenge.api.main import app
+from ecommerce_buy_predictor.api.main import app
 
 
 client = TestClient(app)

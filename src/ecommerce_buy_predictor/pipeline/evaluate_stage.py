@@ -1,8 +1,8 @@
 from pathlib import Path
 import json
 import mlflow
-from tech_challenge.config import settings
-from tech_challenge.models.registry import promote_best_model_to_registry
+from ecommerce_buy_predictor.config import settings
+from ecommerce_buy_predictor.models.registry import promote_best_model_to_registry
 
 
 def evaluate_stage() -> None:

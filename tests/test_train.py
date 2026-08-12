@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 import tempfile
 import os
-from tech_challenge.models.train import ModelTrainer
+from ecommerce_buy_predictor.models.train import ModelTrainer
 
 
 @pytest.fixture

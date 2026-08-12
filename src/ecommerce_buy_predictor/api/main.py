@@ -3,8 +3,8 @@ from contextlib import asynccontextmanager
 import mlflow
 import pandas as pd
 import numpy as np
-from tech_challenge.config import settings
-from tech_challenge.api.schemas import PredictionRequest, PredictionResponse
+from ecommerce_buy_predictor.config import settings
+from ecommerce_buy_predictor.api.schemas import PredictionRequest, PredictionResponse
 
 
 model = None

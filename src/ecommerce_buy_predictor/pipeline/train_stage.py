@@ -1,9 +1,9 @@
 from pathlib import Path
 import mlflow
 import pandas as pd
-from tech_challenge.config import settings
-from tech_challenge.models.train import ModelTrainer
-from tech_challenge.models.evaluate import evaluate_model, log_metrics_to_mlflow
+from ecommerce_buy_predictor.config import settings
+from ecommerce_buy_predictor.models.train import ModelTrainer
+from ecommerce_buy_predictor.models.evaluate import evaluate_model, log_metrics_to_mlflow
 
 
 def train_stage() -> None:

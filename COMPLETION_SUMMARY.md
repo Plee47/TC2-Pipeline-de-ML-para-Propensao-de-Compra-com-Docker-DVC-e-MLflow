@@ -79,8 +79,8 @@
 ## 📁 Estrutura Final do Projeto
 
 ```
-tech-challenge-fase2/
-├── src/tech_challenge/              # Código principal (PYTHONPATH)
+mba.fiap.ecommerce.buy.predictor/
+├── src/ecommerce_buy_predictor/     # Código principal (PYTHONPATH)
 │   ├── __init__.py
 │   ├── config.py                    # Leitura de .env com pydantic-settings
 │   ├── data/
@@ -213,7 +213,7 @@ tech-challenge-fase2/
 
 ### Setup Local
 ```bash
-cd tech-challenge-fase2
+cd mba.fiap.ecommerce.buy.predictor
 poetry install          # ~30s
 poetry run dvc repro    # ~1m (preprocess + train + evaluate)
 poetry run mlflow ui    # Abre http://localhost:5000
@@ -249,7 +249,7 @@ docker run -p 8000:8000 tech-challenge
 ## 📚 Entregáveis Obrigatórios
 
 ### ✅ Repositório GitHub
-- **URL**: `C:\Users\Aline\OneDrive\Desktop\MBA\tech-challenge-fase2`
+- **URL**: `C:\Users\Aline\OneDrive\Desktop\MBA\mba.fiap.ecommerce.buy.predictor`
 - **Histórico**: 5 commits com descrições detalhadas
 - **README.md**: Completo com Quick Start
 - **poetry.lock**: Commitado ✅

@@ -2,7 +2,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 from typing import Tuple
-from tech_challenge.config import settings
+from ecommerce_buy_predictor.config import settings
 
 
 class Preprocessor:

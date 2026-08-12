@@ -24,4 +24,4 @@ ENV PYTHONPATH=/app/src
 
 EXPOSE 8000
 
-CMD ["python", "-m", "uvicorn", "tech_challenge.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "-m", "uvicorn", "ecommerce_buy_predictor.api.main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -1,10 +1,10 @@
 [tool.poetry]
-name = "tech-challenge-fase2"
+name = "mba.fiap.ecommerce.buy.predictor"
 version = "0.1.0"
 description = "ML Pipeline for e-commerce customer purchase intention prediction"
 authors = ["Tech Challenge Team <rafael.gimenes17@gmail.com>"]
 readme = "README.md"
-packages = [{include = "tech_challenge", from = "src"}]
+packages = [{include = "ecommerce_buy_predictor", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
