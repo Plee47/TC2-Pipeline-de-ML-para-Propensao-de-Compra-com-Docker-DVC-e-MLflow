@@ -1,27 +1,37 @@
-version: "3.9"
-
 services:
   mlflow:
-    image: python:3.10-slim
-    working_dir: /mlflow
+    image: ghcr.io/mlflow/mlflow:v2.19.0
     command: >
-      sh -c "pip install mlflow &&
-             mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root ./artifacts --host 0.0.0.0 --port 5000"
+      mlflow server
+      --backend-store-uri sqlite:////mlflow/mlflow.db
+      --artifacts-destination /mlflow/artifacts
+      --serve-artifacts
+      --host 0.0.0.0 --port 5000
     ports:
       - "5000:5000"
     volumes:
       - mlflow_data:/mlflow
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
 
   api:
     build: .
     ports:
       - "8000:8000"
     environment:
+      # Point the API at the tracking server. Until a model is registered
+      # there, it serves the models/model.pkl baked into the image and
+      # /health reports which source is in use.
       MLFLOW_TRACKING_URI: http://mlflow:5000
+      MODEL_NAME: online_shoppers_intention
+      MODEL_ALIAS: champion
     depends_on:
-      - mlflow
-    volumes:
-      - .:/app
+      mlflow:
+        condition: service_healthy
+    restart: unless-stopped
 
 volumes:
   mlflow_data:
