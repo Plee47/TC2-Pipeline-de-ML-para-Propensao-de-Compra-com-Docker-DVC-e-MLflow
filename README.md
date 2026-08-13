@@ -1,279 +1,221 @@
-# Tech Challenge Fase 2 — Online Shoppers Purchasing Intention Prediction
+# Tech Challenge Fase 2 — Online Shoppers Purchasing Intention
 
+[![CI](https://github.com/Plee47/TC2-Pipeline-de-ML-para-Propensao-de-Compra-com-Docker-DVC-e-MLflow/actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![Poetry](https://img.shields.io/badge/poetry-managed-brightgreen.svg)](https://python-poetry.org/)
 [![DVC](https://img.shields.io/badge/dvc-versioned-orange.svg)](https://dvc.org/)
 [![MLflow](https://img.shields.io/badge/mlflow-tracked-red.svg)](https://mlflow.org/)
 
-Uma solução de **Engenharia de Machine Learning** para prever a propensão de compra de usuários em e-commerce,
-com foco em um pipeline containerizado, reprodutível e profissional.
+Pipeline de Machine Learning Engineering para prever a propensão de compra de sessões em e-commerce:
+dados versionados com DVC, experimentos rastreados no MLflow, modelo servido por uma API FastAPI,
+tudo containerizado.
 
-## 🎯 Objetivo
+## Como funciona
 
-Desenvolver um sistema preditivo que identifique a propensão de compra de um usuário baseado em seu comportamento de navegação,
-usando boas práticas de Clean Code, versionamento de dados (DVC), rastreamento de experimentos (MLflow)
-e containerização (Docker).
+```
+data/raw/*.csv          (DVC)
+        │
+        ▼  preprocess   split estratificado 80/20, sem transformar nada
+data/processed/
+        │
+        ▼  train        para cada modelo em params.yaml:
+        │               Pipeline(feature engineering → encoding/scaling → estimador)
+        │               → MLflow Tracking (params, 6 métricas, modelo com signature)
+        │               → models/model.pkl (o melhor por average_precision)
+        ▼  evaluate     promove o melhor run → Model Registry, alias @champion
+metrics.json            métricas + resultado da promoção (lido por `dvc metrics show`)
+        │
+        ▼
+FastAPI /predict        carrega models:/online_shoppers_intention@champion
+```
 
-## 📋 Requisitos
+O ponto central do desenho: **o pré-processamento faz parte do modelo**, não do estágio de dados.
+O artefato registrado recebe as features cruas — as mesmas que a API expõe no payload — então não
+existe risco de treino e serving aplicarem transformações diferentes.
 
-- Python 3.10+
-- Poetry (gerenciador de dependências)
-- Docker & Docker Compose (opcional, para containerização)
-- Kaggle API (opcional, para download automático do dataset)
-
-## 🚀 Quick Start
-
-### 1. Preparação do Ambiente
+## Quick Start
 
 ```bash
-# Clonar repositório
-cd mba.fiap.ecommerce.buy.predictor
-
-# Instalar dependências
 poetry install
-
-# Copiar .env.example para .env e preencher credenciais
 cp .env.example .env
-# Editar .env com suas configurações
 ```
 
-### 2. Baixar Dataset
-
-#### Opção A: Via Kaggle API (recomendado)
+### 1. Obter o dataset
 
 ```bash
-# Configurar Kaggle (se ainda não fez)
-# https://kaggle.com/settings/account → Create New Token
-# Vai criar ~/.kaggle/kaggle.json
+# Dataset real (UCI, 12.330 sessões, ~15,5% de compras) — use este para resultados
+python scripts/download_dataset.py
 
-# Baixar dataset
-kaggle datasets download -d sagarshrivastava/online-shoppers-intention-to-purchase -p data/raw/
-unzip data/raw/online-shoppers-intention-to-purchase.zip -d data/raw/
-rm data/raw/online-shoppers-intention-to-purchase.zip
+# Ou dado sintético para smoke test do pipeline, sem rede (5.000 sessões)
+python scripts/generate_sample_data.py
 ```
 
-#### Opção B: Download Manual
+O `.dvc` versionado neste repositório aponta para o **dado sintético**, que é o que a CI usa.
+Ao trocar pelo dataset real, rode `dvc add data/raw/online_shoppers_intention.csv` e commite o
+ponteiro atualizado.
 
-Baixar manualmente em https://kaggle.com/datasets/sagarshrivastava/online-shoppers-intention-to-purchase
-e salvar `online_shoppers_intention.csv` em `data/raw/`.
-
-### 3. Inicializar DVC e Pipeline
+### 2. Rodar o pipeline
 
 ```bash
-# Inicializar DVC (se não feito)
-dvc init
-
-# Executar pipeline completo (preprocess → train → evaluate)
-dvc repro
-
-# Visualizar métricas
-dvc metrics show
+poetry run dvc repro
+poetry run dvc metrics show
 ```
 
-### 4. Visualizar Experimentos no MLflow
+### 3. Ver os experimentos
 
 ```bash
-# Abrir MLflow UI
-mlflow ui --backend-store-uri sqlite:///mlflow.db
-
-# Acessa http://localhost:5000 para ver:
-# - Runs de LogisticRegression e RandomForest
-# - Métricas (accuracy, precision, recall, F1, ROC-AUC)
-# - Modelos registrados no Registry
+poetry run mlflow ui --backend-store-uri sqlite:///mlflow.db
+# http://localhost:5000
 ```
 
-### 5. Rodar API Localmente
+### 4. Subir a API
 
 ```bash
-# Via Poetry
-poetry run python -m uvicorn ecommerce_buy_predictor.api.main:app --reload --host 0.0.0.0 --port 8000
-
-# Ou via Docker
-docker build -t ecommerce-predictor .
-docker run -p 8000:8000 ecommerce-predictor
+poetry run uvicorn ecommerce_buy_predictor.api.main:app --reload
 ```
 
-Testar endpoints:
-
 ```bash
-# Health check
 curl http://localhost:8000/health
+```
 
-# Fazer predição (exemplo)
+```json
+{"status":"healthy","model_loaded":true,"model_source":"models:/online_shoppers_intention@champion"}
+```
+
+```bash
 curl -X POST http://localhost:8000/predict \
   -H "Content-Type: application/json" \
-  -d '{"features": [1.0, 2.0, 3.0, 4.0, 5.0]}'
+  -d '{
+    "Administrative": 2, "Administrative_Duration": 80.0,
+    "Informational": 0, "Informational_Duration": 0.0,
+    "ProductRelated": 31, "ProductRelated_Duration": 1200.5,
+    "BounceRates": 0.01, "ExitRates": 0.03, "PageValues": 12.4, "SpecialDay": 0.0,
+    "Month": "Nov", "OperatingSystems": 2, "Browser": 2, "Region": 1, "TrafficType": 3,
+    "VisitorType": "Returning_Visitor", "Weekend": false
+  }'
 ```
 
-## 📁 Estrutura do Projeto
+```json
+{"prediction":1,"probability":0.87}
+```
+
+Documentação interativa em http://localhost:8000/docs. Há também `POST /predict/batch`
+para até 1.000 sessões por chamada.
+
+## Docker
+
+```bash
+docker build -t ecommerce-buy-predictor .
+docker run -p 8000:8000 ecommerce-buy-predictor
+```
+
+A imagem embute `models/model.pkl`, então a API responde mesmo sem MLflow no ar. Com o stack
+completo, ela prefere o modelo do Registry e informa a origem em `/health`:
+
+```bash
+docker compose up --build
+# API: http://localhost:8000/docs   MLflow: http://localhost:5000
+```
+
+Para popular o Registry do servidor que subiu no compose:
+
+```bash
+MLFLOW_TRACKING_URI=http://localhost:5000 poetry run dvc repro --force
+```
+
+## Estrutura
 
 ```
-mba.fiap.ecommerce.buy.predictor/
-├── src/ecommerce_buy_predictor/
-│   ├── config.py                 # Configurações via .env
-│   ├── data/
-│   │   ├── loader.py             # Carregar CSV
-│   │   └── preprocess.py         # Preprocessamento
-│   ├── features/
-│   │   └── build_features.py     # Feature engineering
-│   ├── models/
-│   │   ├── train.py              # Treinamento (LogReg, RandomForest)
-│   │   ├── evaluate.py           # Avaliação e métricas
-│   │   └── registry.py           # MLflow Model Registry
-│   ├── pipeline/
-│   │   ├── preprocess_stage.py   # DVC stage: preprocess
-│   │   ├── train_stage.py        # DVC stage: train
-│   │   └── evaluate_stage.py     # DVC stage: evaluate
-│   └── api/
-│       ├── main.py               # FastAPI app
-│       └── schemas.py            # Pydantic schemas
-├── tests/                        # Testes unitários
+src/ecommerce_buy_predictor/
+├── config.py                     # Settings via .env (pydantic-settings)
 ├── data/
-│   ├── raw/                      # Dataset original (versionado DVC)
-│   └── processed/                # Dados processados (treino/teste)
-├── models/                       # Modelos locais
-├── pyproject.toml                # Dependências Poetry
-├── dvc.yaml                      # Pipeline DVC
-├── params.yaml                   # Hiperparâmetros
-├── Dockerfile                    # Containerização
-├── docker-compose.yml            # Orquestração local
-└── README.md                     # Este arquivo
+│   ├── loader.py                 # Leitura do CSV
+│   └── preprocess.py             # split estratificado + ColumnTransformer
+├── features/
+│   ├── schema.py                 # fonte única das colunas e dtypes
+│   └── build_features.py         # features derivadas da sessão
+├── models/
+│   ├── train.py                  # Pipeline(features → preprocess → estimador)
+│   ├── evaluate.py               # métricas (inclui PR-AUC)
+│   └── registry.py               # promoção para o Model Registry
+├── pipeline/
+│   ├── params.py                 # leitura de params.yaml
+│   ├── preprocess_stage.py       # estágio DVC 1
+│   ├── train_stage.py            # estágio DVC 2
+│   └── evaluate_stage.py         # estágio DVC 3
+└── api/
+    ├── main.py                   # FastAPI: /health, /predict, /predict/batch
+    └── schemas.py                # payload com as 17 features nomeadas
 ```
 
-## 🧪 Testes
+## Hiperparâmetros
+
+Tudo em `params.yaml`, que é dependência declarada dos estágios no `dvc.yaml` — mudar um valor
+invalida o cache e força o re-treino:
+
+```yaml
+selection_metric: average_precision   # métrica que escolhe o modelo promovido
+models:
+  LogisticRegression:
+    max_iter: 1000
+  RandomForest:
+    n_estimators: 100
+    max_depth: 10
+```
+
+Adicionar um terceiro modelo é acrescentar uma entrada em `models:` e registrar a classe em
+`ESTIMATORS` (`src/ecommerce_buy_predictor/models/train.py`).
+
+## Métricas
+
+A classe positiva é ~15% do total, então **accuracy não é a métrica de decisão**: um modelo que
+sempre responde "não compra" acerta 85% e é inútil. O pipeline registra accuracy, precision,
+recall, F1, ROC-AUC e average precision (PR-AUC), e usa PR-AUC para escolher o modelo promovido.
+Ambos os estimadores usam `class_weight="balanced"`.
+
+Resultado com o dado sintético (5.000 sessões, 14,8% positivos):
+
+| Modelo | Accuracy | Precision | Recall | F1 | ROC-AUC | PR-AUC |
+|---|---|---|---|---|---|---|
+| **LogisticRegression** (promovido) | 0.694 | 0.258 | 0.568 | 0.354 | 0.706 | **0.347** |
+| RandomForest | 0.794 | 0.344 | 0.432 | 0.383 | 0.698 | 0.302 |
+
+PR-AUC de 0.347 contra uma linha de base de 0.148 (a taxa de positivos) — o modelo tem sinal.
+Números do dataset real serão diferentes; rode `scripts/download_dataset.py` e `dvc repro` para obtê-los.
+
+## Desenvolvimento
 
 ```bash
-# Rodar testes
-poetry run pytest -v
-
-# Com cobertura
-poetry run pytest --cov=src tests/
+poetry run pytest                       # 37 testes
+poetry run pytest --cov=src             # cobertura (97%)
+poetry run ruff check src/ tests/ scripts/
 ```
 
-## 🔍 Qualidade de Código
+A CI (`.github/workflows/ci.yml`) roda lint, testes, o pipeline completo (falhando se o modelo não
+for promovido) e o build da imagem Docker com um smoke test no `/health`.
+
+## Dados e DVC
+
+`.dvc/` e `dvc.lock` **são versionados** — sem eles não há como reproduzir o pipeline a partir de
+um clone. O dataset em si não está no Git; para compartilhá-lo entre máquinas, configure um remote:
 
 ```bash
-# Lint com Ruff
-poetry run ruff check src/
-
-# Fix automático
-poetry run ruff check --fix src/
+dvc remote add -d storage s3://seu-bucket/tc2   # ou gdrive://, azure://, uma pasta de rede...
+dvc push
 ```
 
-## 🐳 Containerização (Docker)
+Sem remote configurado, qualquer pessoa reconstrói o dado com `scripts/download_dataset.py`
+(real) ou `scripts/generate_sample_data.py` (sintético, determinístico com seed 42).
 
-### Compilar imagem
+## Referências
 
-```bash
-docker build -t tech-challenge:latest .
-```
+- [Online Shoppers Purchasing Intention Dataset (UCI)](https://archive.ics.uci.edu/dataset/468/online+shoppers+purchasing+intention+dataset)
+- [DVC](https://dvc.org/doc) · [MLflow](https://mlflow.org/docs/) · [FastAPI](https://fastapi.tiangolo.com/) · [Poetry](https://python-poetry.org/docs/)
 
-### Rodar container
+## Time
 
-```bash
-docker run -p 8000:8000 tech-challenge:latest
-```
+Tech Challenge Fase 2 — POSTECH 10MLET.
 
-### Subir stack completo (MLflow + API)
-
-```bash
-docker-compose up
-```
-
-Acessa:
-- API: http://localhost:8000/docs (Swagger UI)
-- MLflow: http://localhost:5000
-
-## 🔄 Pipeline DVC
-
-O pipeline está definido em `dvc.yaml` com 3 estágios:
-
-1. **preprocess**: Carrega dados brutos, aplica limpeza, encoding e split (80/20)
-2. **train**: Treina 2 modelos (LogisticRegression + RandomForest) com MLflow tracking
-3. **evaluate**: Promove melhor modelo para MLflow Model Registry (Production)
-
-Rodar pipeline:
-
-```bash
-dvc repro
-```
-
-Visualizar dependências:
-
-```bash
-dvc dag
-```
-
-## 📊 Modelos
-
-### LogisticRegression
-- Interpretável, rápido
-- Útil para baseline
-
-### RandomForest
-- Captura não-linearidades
-- Robusto a dados desbalanceados
-
-Ambos são rastreados no MLflow Tracking com:
-- Parâmetros (n_estimators, max_iter, etc.)
-- Métricas (accuracy, precision, recall, F1, ROC-AUC)
-- Artefatos (modelo pkl, exemplos de entrada)
-
-Melhor modelo é promovido para `Production` no Model Registry.
-
-## 🌐 Deploy (Opcional)
-
-### Em Render.com
-
-```bash
-# Criar Render service com imagem Docker
-# - URL: https://github.com/<seu-repo>/mba.fiap.ecommerce.buy.predictor
-# - Dockerfile presente
-# - Portar 8000
-
-# Acessar
-curl https://<seu-render-app>.onrender.com/health
-```
-
-### Em AWS App Runner
-
-```bash
-aws apprunner create-service \
-  --service-name tech-challenge \
-  --source-configuration RepositoryType=GITHUB,ImageRepository=...
-```
-
-### Em Cloud Run (GCP)
-
-```bash
-gcloud run deploy tech-challenge \
-  --source . \
-  --platform managed \
-  --region us-central1 \
-  --allow-unauthenticated
-```
-
-## 📝 Clean Code Principles
-
-- ✅ Funções curtas (≤20 linhas)
-- ✅ Type hints em tudo
-- ✅ Naming conventions descritivas
-- ✅ POO leve (Preprocessor, ModelTrainer)
-- ✅ Sem duplicação de código
-- ✅ Testes unitários
-
-## 🔗 Referências
-
-- [Kaggle Dataset](https://www.kaggle.com/datasets/sagarshrivastava/online-shoppers-intention-to-purchase)
-- [Poetry Docs](https://python-poetry.org/docs/)
-- [DVC Docs](https://dvc.org/doc)
-- [MLflow Docs](https://mlflow.org/docs/)
-- [FastAPI Docs](https://fastapi.tiangolo.com/)
-
-## 👥 Time
-
-Desenvolvido como Tech Challenge Fase 2 — POSTECH — 10MLET
-
-## 📄 Licença
+## Licença
 
 MIT
