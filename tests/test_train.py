@@ -1,63 +1,86 @@
 import pandas as pd
 import pytest
-import tempfile
-import os
-from ecommerce_buy_predictor.models.train import ModelTrainer
+
+from ecommerce_buy_predictor.models.evaluate import evaluate_model
+from ecommerce_buy_predictor.models.train import ESTIMATORS, ModelTrainer, build_model
 
 
-@pytest.fixture
-def sample_data():
-    X = pd.DataFrame({
-        "feature1": [1.0, 2.0, 3.0, 4.0, 5.0],
-        "feature2": [2.0, 3.0, 4.0, 5.0, 6.0],
-    })
-    y = pd.Series([0, 1, 0, 1, 0])
-    return X, y
+@pytest.mark.parametrize("estimator_name", sorted(ESTIMATORS))
+def test_pipeline_trains_on_raw_features(estimator_name, raw_features, raw_target):
+    trainer = ModelTrainer(estimator_name, {}, random_seed=42).fit(raw_features, raw_target)
+
+    predictions = trainer.predict(raw_features)
+    probabilities = trainer.predict_proba(raw_features)
+
+    assert len(predictions) == len(raw_features)
+    assert probabilities.between(0, 1).all()
 
 
-def test_logistic_regression_training(sample_data):
-    X, y = sample_data
-    trainer = ModelTrainer(random_seed=42)
-    trainer.train_logistic_regression(X, y)
-
-    assert trainer.model is not None
-    predictions = trainer.predict(X)
-    assert len(predictions) == len(X)
+def test_build_model_rejects_unknown_estimator():
+    with pytest.raises(ValueError, match="Unknown estimator"):
+        build_model("XGBoost", {}, random_seed=42)
 
 
-def test_random_forest_training(sample_data):
-    X, y = sample_data
-    trainer = ModelTrainer(random_seed=42)
-    trainer.train_random_forest(X, y, n_estimators=10)
+def test_hyperparameters_reach_the_estimator():
+    model = build_model("RandomForest", {"n_estimators": 7, "max_depth": 3}, 42)
+    estimator = model.named_steps["estimator"]
 
-    assert trainer.model is not None
-    predictions = trainer.predict(X)
-    assert len(predictions) == len(X)
-
-
-def test_predict_proba(sample_data):
-    X, y = sample_data
-    trainer = ModelTrainer(random_seed=42)
-    trainer.train_logistic_regression(X, y)
-
-    proba = trainer.predict_proba(X)
-    assert proba.shape[0] == len(X)
-    assert proba.shape[1] == 2
+    assert estimator.n_estimators == 7
+    assert estimator.max_depth == 3
+    assert estimator.class_weight == "balanced"
 
 
-def test_save_and_load_model(sample_data):
-    X, y = sample_data
-    trainer = ModelTrainer(random_seed=42)
-    trainer.train_logistic_regression(X, y)
+def test_model_accepts_raw_categorical_values(raw_features, raw_target):
+    """The pipeline must swallow strings and booleans, not pre-encoded numbers."""
+    trainer = ModelTrainer("LogisticRegression", {"max_iter": 200}, 42).fit(
+        raw_features, raw_target
+    )
 
-    with tempfile.TemporaryDirectory() as tmpdir:
-        model_path = os.path.join(tmpdir, "model.joblib")
-        trainer.save_model(model_path)
+    single_row = raw_features.head(1)
 
-        trainer2 = ModelTrainer()
-        trainer2.load_model(model_path)
+    assert single_row["Month"].dtype == object
+    assert trainer.predict(single_row).iloc[0] in (0, 1)
 
-        pred1 = trainer.predict(X)
-        pred2 = trainer2.predict(X)
 
-        assert (pred1 == pred2).all()
+def test_training_is_deterministic(raw_features, raw_target):
+    first = ModelTrainer("RandomForest", {"n_estimators": 10}, 42).fit(raw_features, raw_target)
+    second = ModelTrainer("RandomForest", {"n_estimators": 10}, 42).fit(raw_features, raw_target)
+
+    pd.testing.assert_series_equal(
+        first.predict_proba(raw_features), second.predict_proba(raw_features)
+    )
+
+
+def test_save_and_load_roundtrip(tmp_path, raw_features, raw_target):
+    trainer = ModelTrainer("LogisticRegression", {"max_iter": 200}, 42).fit(
+        raw_features, raw_target
+    )
+    model_path = tmp_path / "model.pkl"
+    trainer.save_model(str(model_path))
+
+    reloaded = ModelTrainer.load_model(str(model_path))
+
+    assert (reloaded.predict(raw_features) == trainer.predict(raw_features)).all()
+
+
+def test_metrics_cover_imbalance(raw_features, raw_target):
+    trainer = ModelTrainer("RandomForest", {"n_estimators": 25}, 42).fit(
+        raw_features, raw_target
+    )
+    metrics = evaluate_model(
+        raw_target, trainer.predict(raw_features), trainer.predict_proba(raw_features)
+    )
+
+    assert {"accuracy", "precision", "recall", "f1", "roc_auc", "average_precision"} <= set(
+        metrics
+    )
+    assert metrics["roc_auc"] > 0.5
+
+
+def test_balanced_class_weight_avoids_all_zero_predictions(raw_features, raw_target):
+    """The original code always predicted the majority class."""
+    trainer = ModelTrainer("LogisticRegression", {"max_iter": 500}, 42).fit(
+        raw_features, raw_target
+    )
+
+    assert trainer.predict(raw_features).sum() > 0
