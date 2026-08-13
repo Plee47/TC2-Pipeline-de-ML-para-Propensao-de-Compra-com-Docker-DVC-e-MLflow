@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(awk '{print $2}')",
-      "Bash(xargs kill -9)"
-    ]
-  }
-}
