@@ -50,9 +50,9 @@ python scripts/download_dataset.py
 python scripts/generate_sample_data.py
 ```
 
-O `.dvc` versionado neste repositório aponta para o **dado sintético**, que é o que a CI usa.
-Ao trocar pelo dataset real, rode `dvc add data/raw/online_shoppers_intention.csv` e commite o
-ponteiro atualizado.
+O `.dvc` versionado aponta para o **dataset real** (12.330 sessões, 15,47% de compras), que é a
+origem das métricas abaixo. O dado sintético existe para o smoke test da CI, que roda sem rede.
+Ao trocar o arquivo, rode `dvc add data/raw/online_shoppers_intention.csv` e commite o ponteiro.
 
 ### 2. Rodar o pipeline
 
@@ -173,15 +173,20 @@ sempre responde "não compra" acerta 85% e é inútil. O pipeline registra accur
 recall, F1, ROC-AUC e average precision (PR-AUC), e usa PR-AUC para escolher o modelo promovido.
 Ambos os estimadores usam `class_weight="balanced"`.
 
-Resultado com o dado sintético (5.000 sessões, 14,8% positivos):
+Dataset real da UCI (12.330 sessões, 15,47% positivos, split 80/20 com seed 42):
 
 | Modelo | Accuracy | Precision | Recall | F1 | ROC-AUC | PR-AUC |
 |---|---|---|---|---|---|---|
-| **LogisticRegression** (promovido) | 0.694 | 0.258 | 0.568 | 0.354 | 0.706 | **0.347** |
-| RandomForest | 0.794 | 0.344 | 0.432 | 0.383 | 0.698 | 0.302 |
+| **RandomForest** (promovido) | 0.858 | 0.528 | 0.825 | 0.644 | 0.909 | **0.684** |
+| LogisticRegression | 0.841 | 0.492 | 0.743 | 0.592 | 0.893 | 0.622 |
 
-PR-AUC de 0.347 contra uma linha de base de 0.148 (a taxa de positivos) — o modelo tem sinal.
-Números do dataset real serão diferentes; rode `scripts/download_dataset.py` e `dvc repro` para obtê-los.
+PR-AUC de 0.684 contra uma linha de base de 0.155 (a taxa de positivos): 4,4x melhor que o acaso.
+Vale reparar na accuracy: 0.858 é praticamente o que um modelo que responde "não compra" para todo
+mundo obteria (0.845). É a diferença entre recall 0.825 e recall 0.0 que importa, e accuracy não
+enxerga essa diferença — por isso a seleção usa PR-AUC.
+
+Com o dado sintético do smoke test (5.000 sessões, 14,8% positivos), o promovido é a
+LogisticRegression com PR-AUC 0.347 sobre base 0.148.
 
 ## Desenvolvimento
 

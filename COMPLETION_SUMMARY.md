@@ -18,16 +18,12 @@ se pretendia entregar. Onde há limitação conhecida, ela está escrita.
 
 ## Limitações conhecidas
 
-1. **O dataset versionado é sintético.** `scripts/generate_sample_data.py` gera 5.000 sessões com
-   o mesmo schema do dataset real e um alvo que depende das features, o que permite testar o
-   pipeline sem rede. As métricas do README vêm desse dado e **não representam a performance no
-   dataset real** — para isso, rode `scripts/download_dataset.py` e `dvc repro`.
-2. **Não há DVC remote configurado.** O `.dvc` do dataset está versionado, mas o arquivo em si é
+1. **Não há DVC remote configurado.** O `.dvc` do dataset está versionado, mas o arquivo em si é
    reconstruído localmente por um dos dois scripts. Compartilhamento real exige
    `dvc remote add -d storage <url>` + `dvc push`.
-3. **Sem tuning de hiperparâmetros.** Os valores em `params.yaml` são razoáveis, não otimizados.
+2. **Sem tuning de hiperparâmetros.** Os valores em `params.yaml` são razoáveis, não otimizados.
    Não há busca em grade nem validação cruzada — a seleção usa um único split 80/20.
-4. **Registry local.** O backend padrão é SQLite em arquivo. Para uso multi-usuário, aponte
+3. **Registry local.** O backend padrão é SQLite em arquivo. Para uso multi-usuário, aponte
    `MLFLOW_TRACKING_URI` para um tracking server (o `docker-compose.yml` sobe um).
 
 ## Verificado nesta versão
@@ -36,10 +32,11 @@ se pretendia entregar. Onde há limitação conhecida, ela está escrita.
 ruff check src/ tests/ scripts/   All checks passed
 pytest                            37 passed
 pytest --cov=src                  97%
-dvc repro                         3 estágios, modelo promovido (metrics.json: "promoted": true)
+dvc repro                         3 estágios, RandomForest promovido (metrics.json: "promoted": true)
+dvc metrics show                  recall 0.825 | PR-AUC 0.684 | ROC-AUC 0.909 (dataset real)
 dvc status                        Data and pipelines are up to date
-GET  /health                      200 {"status":"healthy","model_loaded":true,...}
-POST /predict                     200 {"prediction":1,"probability":0.87}
+GET  /health                      200 {"model_loaded":true,"model_source":"models:/...@champion"}
+POST /predict                     200 {"prediction":1,"probability":0.999}
 ```
 
 O build Docker é exercitado pela CI (`.github/workflows/ci.yml`), que sobe o container e checa o
@@ -47,7 +44,6 @@ O build Docker é exercitado pela CI (`.github/workflows/ci.yml`), que sobe o co
 
 ## Próximos passos
 
-- [ ] Rodar o pipeline com o dataset real e publicar as métricas resultantes
 - [ ] Configurar um DVC remote acessível ao time
 - [ ] Tuning de hiperparâmetros (Optuna) com validação cruzada
 - [ ] Monitoramento de drift do dado de entrada

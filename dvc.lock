@@ -5,8 +5,8 @@ stages:
     deps:
     - path: data/raw/online_shoppers_intention.csv
       hash: md5
-      md5: 58892a67c034e33fa83bf49320426def
-      size: 738764
+      md5: cc6ec1db03b4f10f8de52c56ff48b085
+      size: 1072063
     - path: src/ecommerce_buy_predictor/data
       hash: md5
       md5: 888e41290034a1f91b467f1ebca30128.dir
@@ -27,16 +27,16 @@ stages:
     outs:
     - path: data/processed
       hash: md5
-      md5: 97b09f134671d06f32aa64c169c1bb6e.dir
-      size: 707813
+      md5: 78911971c2f8ed2c9e09f31da4b9ba99.dir
+      size: 1134438
       nfiles: 4
   train:
     cmd: python -m ecommerce_buy_predictor.pipeline.train_stage
     deps:
     - path: data/processed
       hash: md5
-      md5: 97b09f134671d06f32aa64c169c1bb6e.dir
-      size: 707813
+      md5: 78911971c2f8ed2c9e09f31da4b9ba99.dir
+      size: 1134438
       nfiles: 4
     - path: src/ecommerce_buy_predictor/features
       hash: md5
@@ -70,23 +70,23 @@ stages:
     outs:
     - path: models/model.pkl
       hash: md5
-      md5: 93b5ebd35b170f1b31f54800795fc2ec
-      size: 6961
+      md5: a16e276c65e6f74c84bee4c3f30155be
+      size: 3716226
     - path: reports/train_metrics.json
       hash: md5
-      md5: 1c156c87663a3ee6b00c1844838e2384
-      size: 286
+      md5: a817d078c3c0237821172571cf5aa05c
+      size: 290
   evaluate:
     cmd: python -m ecommerce_buy_predictor.pipeline.evaluate_stage
     deps:
     - path: models/model.pkl
       hash: md5
-      md5: 93b5ebd35b170f1b31f54800795fc2ec
-      size: 6961
+      md5: a16e276c65e6f74c84bee4c3f30155be
+      size: 3716226
     - path: reports/train_metrics.json
       hash: md5
-      md5: 1c156c87663a3ee6b00c1844838e2384
-      size: 286
+      md5: a817d078c3c0237821172571cf5aa05c
+      size: 290
     - path: src/ecommerce_buy_predictor/models/registry.py
       hash: md5
       md5: 0c0f42f0f984dc199249a410928ff285
@@ -101,5 +101,5 @@ stages:
     outs:
     - path: metrics.json
       hash: md5
-      md5: 08363af62323c338b5ede3e7118dbd7a
-      size: 446
+      md5: e75396a3add2b38b52271d6a455a19b9
+      size: 450
