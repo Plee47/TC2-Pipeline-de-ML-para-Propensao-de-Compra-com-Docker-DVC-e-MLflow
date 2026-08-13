@@ -1,32 +1,43 @@
 stages:
   preprocess:
-    cmd: poetry run python run_preprocess.py
+    cmd: python -m ecommerce_buy_predictor.pipeline.preprocess_stage
     deps:
       - data/raw/online_shoppers_intention.csv
-      - src/ecommerce_buy_predictor/data/loader.py
-      - src/ecommerce_buy_predictor/data/preprocess.py
-      - run_preprocess.py
+      - src/ecommerce_buy_predictor/data
+      - src/ecommerce_buy_predictor/features/schema.py
+      - src/ecommerce_buy_predictor/pipeline/preprocess_stage.py
+    params:
+      - random_seed
+      - split.test_size
     outs:
-      - data/processed:
-          cache: true
+      - data/processed
 
   train:
-    cmd: poetry run python run_train.py
+    cmd: python -m ecommerce_buy_predictor.pipeline.train_stage
     deps:
       - data/processed
+      - src/ecommerce_buy_predictor/features
       - src/ecommerce_buy_predictor/models/train.py
       - src/ecommerce_buy_predictor/models/evaluate.py
-      - params.yaml
-      - run_train.py
+      - src/ecommerce_buy_predictor/pipeline/train_stage.py
+    params:
+      - random_seed
+      - selection_metric
+      - models
     outs:
       - models/model.pkl
+      - reports/train_metrics.json:
+          cache: false
 
   evaluate:
-    cmd: poetry run python run_evaluate.py
+    cmd: python -m ecommerce_buy_predictor.pipeline.evaluate_stage
     deps:
-      - src/ecommerce_buy_predictor/models/registry.py
       - models/model.pkl
-      - run_evaluate.py
+      - reports/train_metrics.json
+      - src/ecommerce_buy_predictor/models/registry.py
+      - src/ecommerce_buy_predictor/pipeline/evaluate_stage.py
+    params:
+      - selection_metric
     metrics:
       - metrics.json:
           cache: false

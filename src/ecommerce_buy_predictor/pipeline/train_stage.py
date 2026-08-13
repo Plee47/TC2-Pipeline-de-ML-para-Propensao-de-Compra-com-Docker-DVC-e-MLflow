@@ -1,61 +1,102 @@
+import json
 from pathlib import Path
+
 import mlflow
 import pandas as pd
+from mlflow.models import infer_signature
+
 from ecommerce_buy_predictor.config import settings
-from ecommerce_buy_predictor.models.train import ModelTrainer
 from ecommerce_buy_predictor.models.evaluate import evaluate_model, log_metrics_to_mlflow
+from ecommerce_buy_predictor.models.train import ModelTrainer
+from ecommerce_buy_predictor.pipeline.params import load_params
+
+TRAIN_REPORT_FILE = Path("reports/train_metrics.json")
+
+
+def _load_split(processed_dir: Path):
+    """Read the train/test split produced by the preprocess stage."""
+    if not processed_dir.exists():
+        raise FileNotFoundError(
+            f"Processed data not found: {processed_dir}. Run the preprocess stage first."
+        )
+
+    return (
+        pd.read_csv(processed_dir / "X_train.csv"),
+        pd.read_csv(processed_dir / "X_test.csv"),
+        pd.read_csv(processed_dir / "y_train.csv").iloc[:, 0],
+        pd.read_csv(processed_dir / "y_test.csv").iloc[:, 0],
+    )
 
 
 def train_stage() -> None:
-    """DVC pipeline stage: train model and log to MLflow."""
-    processed_dir = Path(settings.data_processed_path)
-    models_dir = Path(settings.model_registry_uri)
+    """DVC stage: train every model in ``params.yaml`` and log them to MLflow.
 
-    if not processed_dir.exists():
-        raise FileNotFoundError(f"Processed data not found: {processed_dir}")
+    The best model by the configured selection metric is persisted to
+    ``models/model.pkl`` and its metrics to ``reports/train_metrics.json``.
+    """
+    params = load_params()
+    random_seed = params["random_seed"]
+    selection_metric = params["selection_metric"]
 
-    models_dir.mkdir(parents=True, exist_ok=True)
-
-    X_train = pd.read_csv(processed_dir / "X_train.csv")
-    X_test = pd.read_csv(processed_dir / "X_test.csv")
-    y_train = pd.read_csv(processed_dir / "y_train.csv").iloc[:, 0]
-    y_test = pd.read_csv(processed_dir / "y_test.csv").iloc[:, 0]
+    X_train, X_test, y_train, y_test = _load_split(Path(settings.data_processed_path))
 
     mlflow.set_tracking_uri(settings.mlflow_tracking_uri)
-    mlflow.set_experiment("online_shoppers_intention")
+    mlflow.set_experiment(settings.experiment_name)
 
-    models_to_train = [
-        ("LogisticRegression", {"max_iter": 1000}),
-        ("RandomForest", {"n_estimators": 100, "max_depth": 10}),
-    ]
+    best = {"score": float("-inf"), "name": None, "trainer": None, "metrics": {}}
 
-    for model_name, params in models_to_train:
-        with mlflow.start_run(run_name=model_name):
-            mlflow.log_params({"model": model_name, **params})
+    for estimator_name, estimator_params in params["models"].items():
+        with mlflow.start_run(run_name=estimator_name):
+            mlflow.log_params({"model": estimator_name, **estimator_params})
+            mlflow.log_param("random_seed", random_seed)
 
-            trainer = ModelTrainer(random_seed=settings.random_seed)
-
-            if model_name == "LogisticRegression":
-                trainer.train_logistic_regression(X_train, y_train, **params)
-            else:
-                trainer.train_random_forest(X_train, y_train, **params)
+            trainer = ModelTrainer(estimator_name, estimator_params, random_seed).fit(
+                X_train, y_train
+            )
 
             y_pred = trainer.predict(X_test)
             y_pred_proba = trainer.predict_proba(X_test)
-
             metrics = evaluate_model(y_test, y_pred, y_pred_proba)
             log_metrics_to_mlflow(metrics)
 
             mlflow.sklearn.log_model(
-                trainer.model, "model", input_example=X_test.iloc[:1]
+                trainer.model,
+                artifact_path="model",
+                signature=infer_signature(X_test, y_pred.to_numpy()),
+                input_example=X_test.head(),
             )
 
-            print(f"{model_name} trained. Metrics: {metrics}")
+            print(f"{estimator_name}: {metrics}")
 
-    print("Training complete.")
+            if metrics[selection_metric] > best["score"]:
+                best = {
+                    "score": metrics[selection_metric],
+                    "name": estimator_name,
+                    "trainer": trainer,
+                    "metrics": metrics,
+                }
 
+    if best["trainer"] is None:
+        raise ValueError("No model was trained. Check the 'models' key in params.yaml.")
+
+    models_dir = Path(settings.model_dir)
     models_dir.mkdir(parents=True, exist_ok=True)
-    trainer.save_model(models_dir / "model.pkl")
+    best["trainer"].save_model(models_dir / "model.pkl")
+
+    TRAIN_REPORT_FILE.parent.mkdir(parents=True, exist_ok=True)
+    TRAIN_REPORT_FILE.write_text(
+        json.dumps(
+            {"best_model": best["name"], "selection_metric": selection_metric,
+             **best["metrics"]},
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    print(
+        f"Best model: {best['name']} "
+        f"({selection_metric}={best['score']:.4f}) saved to {models_dir / 'model.pkl'}"
+    )
 
 
 if __name__ == "__main__":
