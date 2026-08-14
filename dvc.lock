@@ -1,0 +1,105 @@
+schema: '2.0'
+stages:
+  preprocess:
+    cmd: python -m ecommerce_buy_predictor.pipeline.preprocess_stage
+    deps:
+    - path: data/raw/online_shoppers_intention.csv
+      hash: md5
+      md5: cc6ec1db03b4f10f8de52c56ff48b085
+      size: 1072063
+    - path: src/ecommerce_buy_predictor/data
+      hash: md5
+      md5: 888e41290034a1f91b467f1ebca30128.dir
+      size: 6195
+      nfiles: 6
+    - path: src/ecommerce_buy_predictor/features/schema.py
+      hash: md5
+      md5: 3ea00db81742a7822a13e1dca63af8d0
+      size: 2038
+    - path: src/ecommerce_buy_predictor/pipeline/preprocess_stage.py
+      hash: md5
+      md5: 7905bbe3494b6d51bc23e6aa062cfad0
+      size: 1624
+    params:
+      params.yaml:
+        random_seed: 42
+        split.test_size: 0.2
+    outs:
+    - path: data/processed
+      hash: md5
+      md5: 78911971c2f8ed2c9e09f31da4b9ba99.dir
+      size: 1134438
+      nfiles: 4
+  train:
+    cmd: python -m ecommerce_buy_predictor.pipeline.train_stage
+    deps:
+    - path: data/processed
+      hash: md5
+      md5: 78911971c2f8ed2c9e09f31da4b9ba99.dir
+      size: 1134438
+      nfiles: 4
+    - path: src/ecommerce_buy_predictor/features
+      hash: md5
+      md5: e936941a56819dcbebe54777360ac553.dir
+      size: 6823
+      nfiles: 6
+    - path: src/ecommerce_buy_predictor/models/evaluate.py
+      hash: md5
+      md5: 63109ad8dc20c05a591f162d83122646
+      size: 1436
+    - path: src/ecommerce_buy_predictor/models/train.py
+      hash: md5
+      md5: aea191985a6067a36b1f8de2fe6d8d67
+      size: 2888
+    - path: src/ecommerce_buy_predictor/pipeline/train_stage.py
+      hash: md5
+      md5: 346dcab5277d0dd3db452d94427aa729
+      size: 3567
+    params:
+      params.yaml:
+        models:
+          LogisticRegression:
+            max_iter: 1000
+          RandomForest:
+            n_estimators: 100
+            max_depth: 10
+            min_samples_split: 5
+            min_samples_leaf: 2
+        random_seed: 42
+        selection_metric: average_precision
+    outs:
+    - path: models/model.pkl
+      hash: md5
+      md5: a16e276c65e6f74c84bee4c3f30155be
+      size: 3716226
+    - path: reports/train_metrics.json
+      hash: md5
+      md5: a817d078c3c0237821172571cf5aa05c
+      size: 290
+  evaluate:
+    cmd: python -m ecommerce_buy_predictor.pipeline.evaluate_stage
+    deps:
+    - path: models/model.pkl
+      hash: md5
+      md5: a16e276c65e6f74c84bee4c3f30155be
+      size: 3716226
+    - path: reports/train_metrics.json
+      hash: md5
+      md5: a817d078c3c0237821172571cf5aa05c
+      size: 290
+    - path: src/ecommerce_buy_predictor/models/registry.py
+      hash: md5
+      md5: 0c0f42f0f984dc199249a410928ff285
+      size: 2334
+    - path: src/ecommerce_buy_predictor/pipeline/evaluate_stage.py
+      hash: md5
+      md5: 67e3324e5f7724aeb5bb6fc76405ee26
+      size: 1489
+    params:
+      params.yaml:
+        selection_metric: average_precision
+    outs:
+    - path: metrics.json
+      hash: md5
+      md5: e75396a3add2b38b52271d6a455a19b9
+      size: 450

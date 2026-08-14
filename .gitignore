@@ -30,26 +30,31 @@ ENV/
 env/
 
 # DVC
-.dvc/
-dvc.lock
+# NOTE: .dvc/ and dvc.lock ARE versioned on purpose. Without them the
+# pipeline cannot be reproduced from a clone. DVC writes its own
+# .dvc/.gitignore for the local cache.
+/.dvc/cache
+/.dvc/tmp
 
-# MLflow
+# MLflow (local tracking artefacts are machine specific, never commit them)
 mlruns/
+mlartifacts/
+mlflow.db
 .mlflow
 
 # Environment
 .env
 .env.local
 
-# Data and models (large artifacts)
-data/raw/
-data/processed/
+# Data and models are tracked by DVC, which writes its own .gitignore entries
+# (data/.gitignore, data/raw/.gitignore). The *.dvc pointers must stay in Git.
 models/*.pkl
 models/*.joblib
 
-# IDE
+# IDE / tooling
 .vscode/
 .idea/
+.claude/
 *.swp
 *.swo
 *~
@@ -62,6 +67,7 @@ Thumbs.db
 # Pytest
 .pytest_cache/
 .coverage
+coverage.xml
 htmlcov/
 
 # Jupyter

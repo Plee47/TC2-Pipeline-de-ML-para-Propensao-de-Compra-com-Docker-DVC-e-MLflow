@@ -6,9 +6,5 @@
   "recall": 0.824607329842932,
   "f1": 0.6435137895812053,
   "roc_auc": 0.9094195616565003,
-  "average_precision": 0.6835001454314432,
-  "promoted": true,
-  "model_uri": "models:/online_shoppers_intention@champion",
-  "registered_version": 1,
-  "run_id": "8eb1f5cedcb448f9b0668e66ea76b8aa"
+  "average_precision": 0.6835001454314432
 }

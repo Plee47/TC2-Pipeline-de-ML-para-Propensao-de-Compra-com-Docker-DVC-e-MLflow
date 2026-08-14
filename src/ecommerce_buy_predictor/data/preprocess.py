@@ -1,70 +1,70 @@
+
 import pandas as pd
+from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler, LabelEncoder
-from typing import Tuple
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+
 from ecommerce_buy_predictor.config import settings
+from ecommerce_buy_predictor.features.schema import (
+    BOOLEAN_COLUMNS,
+    CATEGORICAL_COLUMNS,
+    CATEGORICAL_ID_COLUMNS,
+    ENGINEERED_COLUMNS,
+    NUMERIC_COLUMNS,
+    TARGET_COLUMN,
+)
 
 
-class Preprocessor:
-    def __init__(self, random_seed: int = settings.random_seed):
-        self.random_seed = random_seed
-        self.scaler: StandardScaler | None = None
-        self.encoders: dict[str, LabelEncoder] = {}
+def build_preprocessor() -> ColumnTransformer:
+    """Build the feature transformer used inside the model pipeline.
 
-    def fit_transform(
-        self, df: pd.DataFrame, target_col: str = "Revenue"
-    ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
-        """Fit preprocessor and return processed data.
+    Nominal columns (including the integer *codes* such as ``Browser``) are
+    one-hot encoded with ``handle_unknown="ignore"``, so a category unseen at
+    training time degrades gracefully instead of raising at predict time.
 
-        Args:
-            df: Raw DataFrame.
-            target_col: Name of target column.
+    Returns:
+        Unfitted ColumnTransformer.
+    """
+    return ColumnTransformer(
+        transformers=[
+            ("numeric", StandardScaler(), NUMERIC_COLUMNS + ENGINEERED_COLUMNS),
+            (
+                "categorical",
+                OneHotEncoder(handle_unknown="ignore", sparse_output=False),
+                CATEGORICAL_COLUMNS + CATEGORICAL_ID_COLUMNS,
+            ),
+            ("boolean", "passthrough", BOOLEAN_COLUMNS),
+        ],
+        remainder="drop",
+    )
 
-        Returns:
-            X_train, X_test, y_train, y_test
-        """
-        df = df.copy()
 
-        if target_col not in df.columns:
-            raise ValueError(f"Target column '{target_col}' not found in data")
+def split_data(
+    df: pd.DataFrame,
+    target_col: str = TARGET_COLUMN,
+    test_size: float = 0.2,
+    random_seed: int = settings.random_seed,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
+    """Split raw data into stratified train/test sets.
 
-        X = df.drop(columns=[target_col])
-        y = df[target_col]
+    No scaling or encoding happens here: those live in the model pipeline so
+    that training and serving share exactly the same transformations.
 
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.2, random_state=self.random_seed, stratify=y
-        )
+    Args:
+        df: Raw DataFrame.
+        target_col: Name of the target column.
+        test_size: Fraction held out for testing.
+        random_seed: Seed for the split.
 
-        X_train = self._preprocess_features(X_train, fit=True)
-        X_test = self._preprocess_features(X_test, fit=False)
+    Returns:
+        X_train, X_test, y_train, y_test
+    """
+    if target_col not in df.columns:
+        raise ValueError(f"Target column '{target_col}' not found in data")
 
-        return X_train, X_test, y_train, y_test
+    X = df.drop(columns=[target_col])
+    y = df[target_col].astype(int)
 
-    def _preprocess_features(
-        self, X: pd.DataFrame, fit: bool = False
-    ) -> pd.DataFrame:
-        """Preprocess feature columns (encode, scale)."""
-        X = X.copy()
-
-        categorical_cols = X.select_dtypes(
-            include=["object", "category"]
-        ).columns.tolist()
-        numeric_cols = X.select_dtypes(include=["number"]).columns.tolist()
-
-        for col in categorical_cols:
-            if col not in self.encoders:
-                self.encoders[col] = LabelEncoder()
-            if fit:
-                X[col] = self.encoders[col].fit_transform(X[col].astype(str))
-            else:
-                X[col] = self.encoders[col].transform(X[col].astype(str))
-
-        if fit:
-            self.scaler = StandardScaler()
-            X[numeric_cols] = self.scaler.fit_transform(X[numeric_cols])
-        else:
-            if self.scaler is None:
-                raise ValueError("Preprocessor not fitted yet")
-            X[numeric_cols] = self.scaler.transform(X[numeric_cols])
-
-        return X
+    return train_test_split(
+        X, y, test_size=test_size, random_state=random_seed, stratify=y
+    )

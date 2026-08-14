@@ -1,24 +1,29 @@
-import pandas as pd
+
 import mlflow
+import pandas as pd
 from sklearn.metrics import (
     accuracy_score,
+    average_precision_score,
+    f1_score,
     precision_score,
     recall_score,
-    f1_score,
     roc_auc_score,
 )
-from typing import Dict
 
 
 def evaluate_model(
-    y_true: pd.Series, y_pred: pd.Series, y_pred_proba: pd.DataFrame | None = None
-) -> Dict[str, float]:
-    """Evaluate model and return metrics.
+    y_true: pd.Series, y_pred: pd.Series, y_pred_proba: pd.Series | None = None
+) -> dict[str, float]:
+    """Evaluate a binary classifier.
+
+    The target is heavily imbalanced (~15% positives), so accuracy alone is
+    misleading: ``average_precision`` (PR-AUC) and ``recall`` are the metrics
+    that actually tell whether the model finds buyers.
 
     Args:
         y_true: True labels.
         y_pred: Predicted labels.
-        y_pred_proba: Predicted probabilities (optional, for ROC-AUC).
+        y_pred_proba: Probability of the positive class (optional).
 
     Returns:
         Dictionary with metrics.
@@ -31,17 +36,14 @@ def evaluate_model(
     }
 
     if y_pred_proba is not None:
-        try:
-            metrics["roc_auc"] = float(
-                roc_auc_score(y_true, y_pred_proba.iloc[:, 1])
-            )
-        except Exception:
-            metrics["roc_auc"] = 0.0
+        metrics["roc_auc"] = float(roc_auc_score(y_true, y_pred_proba))
+        metrics["average_precision"] = float(
+            average_precision_score(y_true, y_pred_proba)
+        )
 
     return metrics
 
 
-def log_metrics_to_mlflow(metrics: Dict[str, float]) -> None:
-    """Log metrics to MLflow run."""
-    for metric_name, metric_value in metrics.items():
-        mlflow.log_metric(metric_name, metric_value)
+def log_metrics_to_mlflow(metrics: dict[str, float]) -> None:
+    """Log metrics to the active MLflow run."""
+    mlflow.log_metrics(metrics)
