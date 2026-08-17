@@ -123,6 +123,43 @@ Para popular o Registry do servidor que subiu no compose:
 MLFLOW_TRACKING_URI=http://localhost:5000 poetry run dvc repro --force
 ```
 
+## Arquitetura de Deploy
+
+A solução utiliza arquitetura de inferência Real-Time, pois as predições são realizadas sob demanda
+por meio de uma API REST construída com FastAPI. O modelo é carregado na inicialização da aplicação
+e permanece em memória para reduzir a latência das inferências.
+
+### Deploy na AWS
+
+Como etapa final do projeto, a API foi implantada na AWS utilizando uma arquitetura baseada em
+containers.
+
+**Serviços utilizados**
+
+| Serviço | Finalidade |
+|---|---|
+| Amazon ECR | Armazenamento da imagem Docker |
+| Amazon ECS Express | Execução e orquestração do container |
+| Application Load Balancer | Exposição pública da API e distribuição do tráfego |
+| FastAPI | Serviço de inferência em tempo real |
+
+**Fluxo de Deploy**
+
+```
+Docker → Amazon ECR → Amazon ECS Express → Application Load Balancer → API
+```
+
+Essa arquitetura permite executar o modelo em tempo real, mantendo baixa latência e facilitando
+futuras evoluções, como CI/CD e auto scaling.
+
+**Deploy de demonstração**
+
+- Render
+
+**Próxima evolução**
+
+- GitHub Actions para CI/CD
+
 ## Estrutura
 
 ```
@@ -220,6 +257,16 @@ Sem remote configurado, qualquer pessoa reconstrói o dado com `scripts/download
 ## Time
 
 Tech Challenge Fase 2 — POSTECH 10MLET.
+
+### Equipe e Responsabilidades
+
+| Membro | Responsabilidade | Etapa |
+|---|---|---|
+| Tathiana Araujo Rodnarchuki | Etapa 4 | Etapa 4 |
+| Giselly Kathellyn Domingos da Silva | Etapa 4 | Etapa 4 |
+| Pedro Henrique Ostroski | Etapa 1 | Etapa 1 |
+| Alisson Henrique Lepesqueur Borges Fabiano | Etapa 3 | Etapa 3 |
+| Rafael Fernando Gimenes | Etapa 2 | Etapa 2 |
 
 ## Licença
 
