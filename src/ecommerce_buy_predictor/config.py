@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     random_seed: int = 42
     api_host: str = "0.0.0.0"
     api_port: int = 8000
+    log_level: str = "INFO"
 
 
 settings = Settings()

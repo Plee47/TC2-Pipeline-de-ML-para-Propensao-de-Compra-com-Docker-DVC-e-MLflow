@@ -1,11 +1,13 @@
+import json
 import logging
+import time
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import mlflow
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 
 from ecommerce_buy_predictor.api.schemas import (
     BatchPredictionRequest,
@@ -18,7 +20,12 @@ from ecommerce_buy_predictor.config import settings
 from ecommerce_buy_predictor.features.schema import to_model_frame
 from ecommerce_buy_predictor.models.train import ModelTrainer
 
+logging.basicConfig(
+    level=settings.log_level.upper(),
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+)
 logger = logging.getLogger(__name__)
+access_logger = logging.getLogger("ecommerce_buy_predictor.api.access")
 
 
 @dataclass
@@ -80,6 +87,27 @@ app = FastAPI(
 )
 
 
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    """Log every request as structured JSON: method, path, status and latency."""
+    start = time.perf_counter()
+    response = await call_next(request)
+    duration_ms = (time.perf_counter() - start) * 1000
+
+    access_logger.info(
+        json.dumps(
+            {
+                "event": "request",
+                "method": request.method,
+                "path": request.url.path,
+                "status_code": response.status_code,
+                "duration_ms": round(duration_ms, 2),
+            }
+        )
+    )
+    return response
+
+
 @app.get("/health", response_model=HealthResponse)
 def health_check() -> HealthResponse:
     """Liveness probe that also reports whether a model is being served."""
@@ -127,4 +155,7 @@ def predict_batch(request: BatchPredictionRequest) -> BatchPredictionResponse:
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host=settings.api_host, port=settings.api_port)
+    uvicorn.run(
+        app, host=settings.api_host, port=settings.api_port,
+        log_level=settings.log_level.lower(),
+    )

@@ -102,6 +102,17 @@ curl -X POST http://localhost:8000/predict \
 Documentação interativa em http://localhost:8000/docs. Há também `POST /predict/batch`
 para até 1.000 sessões por chamada.
 
+### Logging
+
+Toda requisição é registrada como um evento estruturado (JSON), com método, path, status
+code e latência em milissegundos:
+
+```json
+{"event": "request", "method": "POST", "path": "/predict", "status_code": 200, "duration_ms": 4.31}
+```
+
+O nível de log é controlado por `LOG_LEVEL` (`Settings.log_level`, default `INFO`).
+
 ## Docker
 
 ```bash
@@ -203,6 +214,16 @@ models:
 Adicionar um terceiro modelo é acrescentar uma entrada em `models:` e registrar a classe em
 `ESTIMATORS` (`src/ecommerce_buy_predictor/models/train.py`).
 
+### Reprodutibilidade
+
+A seed é centralizada em `params.yaml` (`random_seed`) e espelhada em
+`Settings.random_seed` (`src/ecommerce_buy_predictor/config.py`), que é a única fonte
+consultada por todo o fluxo de retreino: split estratificado (`preprocess.py`), cada
+estimador treinado (`ModelTrainer`/`build_model`) e o script de dado sintético
+(`scripts/generate_sample_data.py`). Não há geração de aleatoriedade fora desse caminho —
+cada `random_state`/`seed` do pipeline deriva do mesmo valor, então mudar `random_seed` em
+`params.yaml` é suficiente para reproduzir (ou alterar deliberadamente) qualquer treino.
+
 ## Métricas
 
 A classe positiva é ~15% do total, então **accuracy não é a métrica de decisão**: um modelo que
@@ -228,7 +249,7 @@ LogisticRegression com PR-AUC 0.347 sobre base 0.148.
 ## Desenvolvimento
 
 ```bash
-poetry run pytest                       # 37 testes
+poetry run pytest                       # 38 testes
 poetry run pytest --cov=src             # cobertura (97%)
 poetry run ruff check src/ tests/ scripts/
 ```

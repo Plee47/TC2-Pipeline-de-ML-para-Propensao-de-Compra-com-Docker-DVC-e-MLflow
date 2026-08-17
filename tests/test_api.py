@@ -1,3 +1,4 @@
+import json
 from types import SimpleNamespace
 
 import joblib
@@ -147,6 +148,19 @@ def test_predict_without_model_returns_503(client_without_model, session_payload
 
     assert response.status_code == 503
     assert "Model not loaded" in response.json()["detail"]
+
+
+def test_requests_are_logged_with_latency_and_status(client_with_model, session_payload, caplog):
+    with caplog.at_level("INFO", logger="ecommerce_buy_predictor.api.access"):
+        client_with_model.post("/predict", json=session_payload)
+
+    record = next(r for r in caplog.records if r.name == "ecommerce_buy_predictor.api.access")
+    payload = json.loads(record.getMessage())
+
+    assert payload["method"] == "POST"
+    assert payload["path"] == "/predict"
+    assert payload["status_code"] == 200
+    assert payload["duration_ms"] >= 0
 
 
 def test_errors_do_not_leak_internals(client_with_model, session_payload, monkeypatch):

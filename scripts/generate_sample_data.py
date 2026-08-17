@@ -13,6 +13,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from ecommerce_buy_predictor.config import settings
+
 MONTHS = ["Feb", "Mar", "May", "June", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 HIGH_SEASON = {"Sep", "Oct", "Nov", "Dec"}
 VISITOR_TYPES = ["Returning_Visitor", "New_Visitor", "Other"]
@@ -22,12 +24,14 @@ def _sigmoid(x: np.ndarray) -> np.ndarray:
     return 1.0 / (1.0 + np.exp(-x))
 
 
-def generate_sample_data(n_samples: int = 5000, seed: int = 42) -> pd.DataFrame:
+def generate_sample_data(n_samples: int = 5000, seed: int = settings.random_seed) -> pd.DataFrame:
     """Generate a synthetic dataset whose target depends on the features.
 
     Args:
         n_samples: Number of sessions to generate.
-        seed: Seed for reproducibility.
+        seed: Seed for reproducibility. Defaults to the same
+            ``random_seed`` used by the real training pipeline
+            (``params.yaml`` / :class:`~ecommerce_buy_predictor.config.Settings`).
 
     Returns:
         DataFrame with the same columns and dtypes as the real dataset.

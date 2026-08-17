@@ -7,6 +7,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import FunctionTransformer
 
+from ecommerce_buy_predictor.config import settings
 from ecommerce_buy_predictor.data.preprocess import build_preprocessor
 from ecommerce_buy_predictor.features.build_features import add_engineered_features
 
@@ -53,7 +54,12 @@ def build_model(estimator_name: str, params: dict[str, Any], random_seed: int) -
 class ModelTrainer:
     """Thin wrapper around a model pipeline (fit, predict, persist)."""
 
-    def __init__(self, estimator_name: str, params: dict[str, Any], random_seed: int = 42):
+    def __init__(
+        self,
+        estimator_name: str,
+        params: dict[str, Any],
+        random_seed: int = settings.random_seed,
+    ):
         self.estimator_name = estimator_name
         self.random_seed = random_seed
         self.model: Pipeline = build_model(estimator_name, params, random_seed)
