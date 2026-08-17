@@ -20,7 +20,7 @@ services:
   api:
     build: .
     ports:
-      - "8000:8000"
+      - "${API_PORT:-8000}:8000"
     environment:
       # Point the API at the tracking server. Until a model is registered
       # there, it serves the models/model.pkl baked into the image and
