@@ -217,12 +217,15 @@ Adicionar um terceiro modelo é acrescentar uma entrada em `models:` e registrar
 ### Reprodutibilidade
 
 A seed é centralizada em `params.yaml` (`random_seed`) e espelhada em
-`Settings.random_seed` (`src/ecommerce_buy_predictor/config.py`), que é a única fonte
-consultada por todo o fluxo de retreino: split estratificado (`preprocess.py`), cada
-estimador treinado (`ModelTrainer`/`build_model`) e o script de dado sintético
-(`scripts/generate_sample_data.py`). Não há geração de aleatoriedade fora desse caminho —
-cada `random_state`/`seed` do pipeline deriva do mesmo valor, então mudar `random_seed` em
-`params.yaml` é suficiente para reproduzir (ou alterar deliberadamente) qualquer treino.
+`Settings.random_seed` (`src/ecommerce_buy_predictor/config.py`). Cada estágio do fluxo de
+retreino (`preprocess` → `train`) começa chamando `set_global_seeds(params["random_seed"])`
+(`src/ecommerce_buy_predictor/seed.py`), que fixa **todos** os geradores globais de uma vez —
+`random` do Python, o RNG global do NumPy e `PYTHONHASHSEED` — além do `random_state`
+propagado ao split estratificado (`preprocess.py`) e a cada estimador
+(`ModelTrainer`/`build_model`). O dado sintético (`scripts/generate_sample_data.py`) usa seu
+próprio `numpy.random.default_rng(seed)` isolado, derivado da mesma seed. Não há geração de
+aleatoriedade fora desse caminho, então mudar `random_seed` em `params.yaml` é suficiente para
+reproduzir (ou alterar deliberadamente) qualquer treino ponta a ponta.
 
 ## Métricas
 

@@ -4,6 +4,7 @@ from ecommerce_buy_predictor.config import settings
 from ecommerce_buy_predictor.data.loader import load_raw_data
 from ecommerce_buy_predictor.data.preprocess import split_data
 from ecommerce_buy_predictor.pipeline.params import load_params
+from ecommerce_buy_predictor.seed import set_global_seeds
 
 
 def preprocess_stage() -> None:
@@ -14,6 +15,7 @@ def preprocess_stage() -> None:
     raw input.
     """
     params = load_params()
+    seed = set_global_seeds(params["random_seed"])
     raw_path = Path(settings.data_raw_path)
     processed_dir = Path(settings.data_processed_path)
 
@@ -30,7 +32,7 @@ def preprocess_stage() -> None:
     X_train, X_test, y_train, y_test = split_data(
         df,
         test_size=params["split"]["test_size"],
-        random_seed=params["random_seed"],
+        random_seed=seed,
     )
 
     X_train.to_csv(processed_dir / "X_train.csv", index=False)

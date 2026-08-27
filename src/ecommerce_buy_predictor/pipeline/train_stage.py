@@ -9,6 +9,7 @@ from ecommerce_buy_predictor.config import settings
 from ecommerce_buy_predictor.models.evaluate import evaluate_model, log_metrics_to_mlflow
 from ecommerce_buy_predictor.models.train import ModelTrainer
 from ecommerce_buy_predictor.pipeline.params import load_params
+from ecommerce_buy_predictor.seed import set_global_seeds
 
 TRAIN_REPORT_FILE = Path("reports/train_metrics.json")
 
@@ -35,7 +36,7 @@ def train_stage() -> None:
     ``models/model.pkl`` and its metrics to ``reports/train_metrics.json``.
     """
     params = load_params()
-    random_seed = params["random_seed"]
+    random_seed = set_global_seeds(params["random_seed"])
     selection_metric = params["selection_metric"]
 
     X_train, X_test, y_train, y_test = _load_split(Path(settings.data_processed_path))
