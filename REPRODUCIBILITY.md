@@ -53,6 +53,7 @@ poetry run ruff check src/ tests/ scripts/
 
 | Fonte de variação | Como está controlada |
 |---|---|
+| Geradores globais | cada estágio de retreino chama `set_global_seeds(params["random_seed"])` (`seed.py`): fixa `random`, o RNG global do NumPy e `PYTHONHASHSEED` |
 | Split treino/teste | `random_seed: 42` em `params.yaml`, propagado ao `train_test_split` |
 | Estimadores | mesmo seed em `LogisticRegression` e `RandomForestClassifier` |
 | Dado sintético | `numpy.random.default_rng(42)` em `generate_sample_data` |
