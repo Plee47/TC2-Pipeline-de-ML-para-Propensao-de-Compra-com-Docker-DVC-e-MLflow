@@ -143,33 +143,84 @@ e permanece em memória para reduzir a latência das inferências.
 ### Deploy na AWS
 
 Como etapa final do projeto, a API foi implantada na AWS utilizando uma arquitetura baseada em
-containers.
+containers e inferência em tempo real.
 
 **Serviços utilizados**
 
 | Serviço | Finalidade |
 |---|---|
 | Amazon ECR | Armazenamento da imagem Docker |
-| Amazon ECS Express | Execução e orquestração do container |
+| Amazon ECS Express | Execução e gerenciamento do container |
 | Application Load Balancer | Exposição pública da API e distribuição do tráfego |
 | FastAPI | Serviço de inferência em tempo real |
 
 **Fluxo de Deploy**
 
+```text
+Docker
+   │
+   ▼
+Amazon ECR
+   │
+   ▼
+Amazon ECS Express
+   │
+   ▼
+Application Load Balancer
+   │
+   ▼
+FastAPI :8000
+   │
+   ├── /health
+   ├── /predict
+   ├── /predict/batch
+   └── /docs
 ```
-Docker → Amazon ECR → Amazon ECS Express → Application Load Balancer → API
+
+A imagem Docker da aplicação é publicada no Amazon ECR e utilizada pelo Amazon ECS Express para
+executar o serviço. O ECS disponibiliza a aplicação por meio de um Application Load Balancer,
+permitindo acesso público aos endpoints da API.
+
+A aplicação utiliza a porta **8000** internamente no container. O endpoint `/health` é utilizado
+para verificar a disponibilidade da aplicação durante a execução do serviço.
+
+### Acesso público à API
+
+A API está disponível publicamente na AWS pelo seguinte endereço:
+
+**AWS ECS Express:**  
+https://ec-2ec7f2f203ed431fb9bc8a5d523af39a.ecs.us-east-2.on.aws/
+
+**Documentação interativa (Swagger):**  
+https://ec-2ec7f2f203ed431fb9bc8a5d523af39a.ecs.us-east-2.on.aws/docs
+
+**Health check:**  
+https://ec-2ec7f2f203ed431fb9bc8a5d523af39a.ecs.us-east-2.on.aws/health
+
+**Inferência:**
+
+```text
+POST https://ec-2ec7f2f203ed431fb9bc8a5d523af39a.ecs.us-east-2.on.aws/predict
 ```
 
-Essa arquitetura permite executar o modelo em tempo real, mantendo baixa latência e facilitando
-futuras evoluções, como CI/CD e auto scaling.
+**Inferência em lote:**
 
-**Deploy de demonstração**
+```text
+POST https://ec-2ec7f2f203ed431fb9bc8a5d523af39a.ecs.us-east-2.on.aws/predict/batch
+```
 
-- Render
+A documentação Swagger em `/docs` permite visualizar os schemas de entrada e testar os endpoints
+diretamente pelo navegador.
 
-**Próxima evolução**
+### Ambiente alternativo
 
-- GitHub Actions para CI/CD
+Também existe um deploy de demonstração no Render.
+
+### Próximas evoluções
+
+- GitHub Actions para CI/CD e deploy automático.
+- Monitoramento de métricas da aplicação e do modelo em produção.
+- Evolução das políticas de escalabilidade conforme a demanda.
 
 ## Estrutura
 
